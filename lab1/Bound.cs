@@ -18,13 +18,13 @@ namespace lab1
 
         public void CPU()
         {
-            for (int i = 0; i < threadCount; i++)
+            Parallel.For(0, threadCount, (i, s) =>
             {
                 var task = new Thread(() => DoCPU(i));
 
                 task.Start();
                 task.Join();
-            }
+            });
         }
 
         private void DoCPU(int i)
@@ -34,13 +34,13 @@ namespace lab1
 
         public void Memory()
         {
-            for (int i = 0; i < threadCount; i++)
+            Parallel.For(0, threadCount, (i, s) =>
             {
                 var task = new Thread(() => DoMemory());
 
                 task.Start();
                 task.Join();
-            }
+            });
         }
 
         private void DoMemory()
@@ -67,13 +67,13 @@ namespace lab1
                 Directory.CreateDirectory(directory);
             }
 
-            for (int i = 0; i < threadCount; i++)
+            Parallel.For(0, threadCount, (i, s) =>
             {
                 var task = new Thread(() => DoIO(i));
-       
+
                 task.Start();
                 task.Join();
-            }
+            });
 
         }
 
