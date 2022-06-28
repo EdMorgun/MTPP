@@ -7,6 +7,8 @@ namespace lab1
     {     
         static void Main(string[] args)
         {
+            Console.OutputEncoding = System.Text.Encoding.Unicode;
+
             int threadCount;
 
             do
@@ -62,7 +64,7 @@ namespace lab1
 
         static void ElapseStopWatch(TimeSpan ts, string name)
         {
-            Console.WriteLine($"Кінець роботи {name}. Чат роботи - {ts}\n");
+            Console.WriteLine($"Кінець роботи {name}. Чаc роботи - {ts.TotalMilliseconds}\n");
         }
     }
 }

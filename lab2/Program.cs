@@ -11,6 +11,8 @@ namespace lab2
 
         static void Main(string[] args)
         {
+            Console.OutputEncoding = System.Text.Encoding.Unicode;
+
             GenerateMatrixA();
 
             WriteMatrix(A);

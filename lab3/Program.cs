@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,16 +8,24 @@ namespace lab3
 {
     class Program
     {
-        static List<int>[] crystal;
+        static int[] crystal;
 
         static int N;       // довжина
         static double p;    // імовірність вправо
         static int K;       // кількість часток
         static int I;       // кількість ітерацій                
         static int sec;     // час
+        static Mode mode;    // мод
+
+        enum Mode : int
+        {
+            Time = 1,
+            Iteration = 2
+        }
 
         static void Main(string[] args)
         {
+            Console.OutputEncoding = System.Text.Encoding.Unicode;
             ChooseMode();
         }
 
@@ -24,17 +33,15 @@ namespace lab3
         {
             Console.WriteLine("Оберіть режим: 1 - за часом, 2 - за кіл-тю ітерацій");
 
-            int mode = 0;
-
             do
             {
                 var number = Console.ReadLine();
 
-                int.TryParse(number, out mode);
+                Enum.TryParse(number, out mode);
                 
-            } while (mode != 1 && mode != 2);
+            } while (mode != Mode.Time && mode != Mode.Iteration);
 
-            if (mode == 1)
+            if (mode == Mode.Time)
             {
                 GetNumber(" - довжина масиву", out N);
                 GetNumber(" - імовірність йти праворуч. Формат -> (0,75)", out p);
@@ -53,56 +60,60 @@ namespace lab3
                 IterationMode();
             }
 
-
-
         }
 
         private static void IterationMode()
         {
-            crystal = new List<int>[N];
+            GenerateCrystal();
 
-            for (int i = 0; i < crystal.Length; i++)
-            {
-                crystal[i] = new List<int>();
-            }
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
 
             GenerateThreads();
+
+            stopWatch.Stop();
+            WriteCrystal();
+
+            ElapseStopWatch(stopWatch.Elapsed);
+        }
+
+        static void ElapseStopWatch(TimeSpan ts)
+        {
+            Console.WriteLine($"Кінець роботи. Чаc роботи - {ts.TotalMilliseconds} ms\n");
         }
 
         private static void TimeMode()
         {
-            crystal = new List<int>[N];
-
-            for (int i = 0; i < crystal.Length; i++)
-            {
-                crystal[i] = new List<int>();
-            }
+            GenerateCrystal();
 
             GenerateThreads();
+        }
+
+        private static void GenerateCrystal()
+        {
+            crystal = new int[N];
+            crystal[0] = K;
         }
 
         private static void GenerateThreads()
         {
             Parallel.For(0, K, (i, state) =>
             {
-                var task = new Thread(() => MovePartical(i+1));
+                var task = new Thread(() => MovePartical());
 
                 task.Start();
                 task.Join();
             });
         }
 
-        private static void MovePartical(int number)
+        private static void MovePartical()
         {
             int position = 0;
             var rand = new Random();
             var now = DateTime.Now;
 
-            lock (crystal)
-            {
-                crystal[0].Add(number);
-                WriteCrystal();
-            }
+            if(mode == Mode.Time) WriteCrystal();
+
 
             if (sec != 0)
             {
@@ -111,12 +122,12 @@ namespace lab3
                     lock (crystal)
                     {
                         if (rand.NextDouble() < p)
-                            position = MoveRight(position, number);
+                            position = MoveRight(position);
                         else
-                            position = MoveLeft(position, number);
-
-                        WriteCrystal();
+                            position = MoveLeft(position);
                     }
+                    
+                    if (mode == Mode.Time) WriteCrystal();                    
                     Thread.Sleep(500);
                 }
             }
@@ -127,58 +138,49 @@ namespace lab3
                     lock (crystal)
                     {
                         if (rand.NextDouble() < p)
-                            position = MoveRight(position, number);
+                            position = MoveRight(position);
                         else
-                            position = MoveLeft(position, number);                       
+                            position = MoveLeft(position);                       
                     }
                 }
-                lock (crystal)
-                {
-                    WriteCrystal();
-                }
+
+                if (mode == Mode.Time) WriteCrystal();    
             }
         }
 
-        private static int MoveLeft(int position, int number)
+        private static int MoveLeft(int position)
         {
             if(position - 1 < 0)
             {
-                return MoveRight(position, number);
+                return position;
             }
-
-            crystal[position].Remove(number);
-            crystal[--position].Add(number);
+           
+            crystal[position]--;
+            crystal[--position]++;
             return position;
         }
 
-        private static int MoveRight(int position, int number)
+        private static int MoveRight(int position)
         {
             if (position + 1 >= N)
             {
-                return MoveLeft(position, number);
+                return position;
             }
 
-            crystal[position].Remove(number);
-            crystal[++position].Add(number);
+            crystal[position]--;
+            crystal[++position]++;
             return position;
         }
 
         private static void WriteCrystal()
         {
-            Console.Clear();
-
-            Console.WriteLine(new string('_', N + K * 4));
-            Console.Write("|");
-            foreach (var cell in crystal)
-            {
-                foreach (var item in cell)
-                {
-                    Console.Write($" {item} ");
-                }
-                Console.Write("|");
-            }
             Console.WriteLine();
-            Console.WriteLine(new string('_', N + K * 4));
+
+            lock (crystal)
+            {
+                var str = "[" + string.Join(" ", crystal) + "]";
+                Console.WriteLine(str);
+            }
         }
 
         static void GetNumber(string s, out int i)
